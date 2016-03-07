@@ -67,8 +67,14 @@ class MainEngine(object):
             self.addGateway(FemasGateway, 'FEMAS')
             self.gatewayDict['FEMAS'].setQryEnabled(True)
         except Exception, e:
-            print e  
-            
+            print e
+
+        try:
+            from oandaGateway.oandaGateway import OandaGateway
+            self.addGateway(OandaGateway, 'OANDA')
+            self.gatewayDict['OANDA'].setQryEnabled(True)
+        except Exception, e:
+            print e
         # try:
         #     from ksgoldGateway.ksgoldGateway import KsgoldGateway
         #     self.addGateway(KsgoldGateway, 'KSGOLD')
