@@ -90,6 +90,7 @@ class MainWindow(QtGui.QMainWindow):
         #
         # connectIbAction = QtGui.QAction(u'连接IB', self)
         # connectIbAction.triggered.connect(self.connectIb)
+        
         connectOandaAction = QtGui.QAction(u'连接OANDA', self)
         connectOandaAction.triggered.connect(self.connectOanda)
 
@@ -119,6 +120,7 @@ class MainWindow(QtGui.QMainWindow):
         sysMenu.addAction(connectLtsAction)
         sysMenu.addAction(connectFemasAction)
         sysMenu.addAction(connectKsotpAction)
+
         # sysMenu.addAction(connectKsgoldAction)
         sysMenu.addSeparator()
         # sysMenu.addAction(connectIbAction)
@@ -210,6 +212,11 @@ class MainWindow(QtGui.QMainWindow):
         """连接OANDA"""
         self.mainEngine.connect('OANDA')
 
+    #----------------------------------------------------------------------
+    def connectOanda(self):
+        """连接OANDA"""
+        self.mainEngine.connect('OANDA')
+        
     #----------------------------------------------------------------------
     def test(self):
         """测试按钮用的函数"""
