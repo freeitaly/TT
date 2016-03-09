@@ -82,131 +82,136 @@ class MainWindow(QtGui.QMainWindow):
         connectFemasAction = QtGui.QAction(u'连接飞马', self)
         connectFemasAction.triggered.connect(self.connectFemas)        
         
-        connectKsgoldAction = QtGui.QAction(u'连接金仕达黄金', self)
-        connectKsgoldAction.triggered.connect(self.connectKsgold)           
+        # connectKsgoldAction = QtGui.QAction(u'连接金仕达黄金', self)
+        # connectKsgoldAction.triggered.connect(self.connectKsgold)
         
-        connectWindAction = QtGui.QAction(u'连接Wind', self)
-        connectWindAction.triggered.connect(self.connectWind)
-        
-        connectIbAction = QtGui.QAction(u'连接IB', self)
-        connectIbAction.triggered.connect(self.connectIb) 
+        # connectWindAction = QtGui.QAction(u'连接Wind', self)
+        # connectWindAction.triggered.connect(self.connectWind)
+        #
+        # connectIbAction = QtGui.QAction(u'连接IB', self)
+        # connectIbAction.triggered.connect(self.connectIb)
         
         connectOandaAction = QtGui.QAction(u'连接OANDA', self)
         connectOandaAction.triggered.connect(self.connectOanda)
-        
+
         connectDbAction = QtGui.QAction(u'连接数据库', self)
         connectDbAction.triggered.connect(self.mainEngine.dbConnect)
-        
+
         testAction = QtGui.QAction(u'测试', self)
         testAction.triggered.connect(self.test)
-        
+
         exitAction = QtGui.QAction(u'退出', self)
         exitAction.triggered.connect(self.close)
-        
+
         aboutAction = QtGui.QAction(u'关于', self)
         aboutAction.triggered.connect(self.openAbout)
-        
+
         contractAction = QtGui.QAction(u'查询合约', self)
         contractAction.triggered.connect(self.openContract)
-        
+
         ctaAction = QtGui.QAction(u'CTA策略', self)
         ctaAction.triggered.connect(self.openCta)
-        
+
         # 创建菜单
         menubar = self.menuBar()
-        
+
         sysMenu = menubar.addMenu(u'系统')
         sysMenu.addAction(connectCtpAction)
         sysMenu.addAction(connectLtsAction)
         sysMenu.addAction(connectFemasAction)
         sysMenu.addAction(connectKsotpAction)
-        sysMenu.addAction(connectKsgoldAction)
+
+        # sysMenu.addAction(connectKsgoldAction)
         sysMenu.addSeparator()
-        sysMenu.addAction(connectIbAction)    
+        # sysMenu.addAction(connectIbAction)
         sysMenu.addAction(connectOandaAction)
         sysMenu.addSeparator()
-        sysMenu.addAction(connectWindAction)
+        # sysMenu.addAction(connectWindAction)
         sysMenu.addSeparator()
         sysMenu.addAction(connectDbAction)
         sysMenu.addSeparator()
         sysMenu.addAction(exitAction)
-        
+
         functionMenu = menubar.addMenu(u'功能')
         functionMenu.addAction(contractAction)
-        
+
         # 算法相关
         algoMenu = menubar.addMenu(u'算法')
         algoMenu.addAction(ctaAction)
-        
+
         # 帮助
         helpMenu = menubar.addMenu(u'帮助')
-        helpMenu.addAction(aboutAction)  
+        helpMenu.addAction(aboutAction)
         helpMenu.addAction(testAction)
-    
+
     #----------------------------------------------------------------------
     def initStatusBar(self):
         """初始化状态栏"""
         self.statusLabel = QtGui.QLabel()
         self.statusLabel.setAlignment(QtCore.Qt.AlignLeft)
-        
+
         self.statusBar().addPermanentWidget(self.statusLabel)
         self.statusLabel.setText(self.getCpuMemory())
-        
+
         self.sbCount = 0
         self.sbTrigger = 10     # 10秒刷新一次
         self.eventEngine.register(EVENT_TIMER, self.updateStatusBar)
-        
+
     #----------------------------------------------------------------------
     def updateStatusBar(self, event):
         """在状态栏更新CPU和内存信息"""
         self.sbCount += 1
-        
+
         if self.sbCount == self.sbTrigger:
             self.sbCount = 0
             self.statusLabel.setText(self.getCpuMemory())
-    
+
     #----------------------------------------------------------------------
     def getCpuMemory(self):
         """获取CPU和内存状态信息"""
         cpuPercent = psutil.cpu_percent()
         memoryPercent = psutil.virtual_memory().percent
-        return u'CPU使用率：%d%%   内存使用率：%d%%' % (cpuPercent, memoryPercent)        
-        
+        return u'CPU使用率：%d%%   内存使用率：%d%%' % (cpuPercent, memoryPercent)
+
     #----------------------------------------------------------------------
     def connectCtp(self):
         """连接CTP接口"""
         self.mainEngine.connect('CTP')
-        
+
     #----------------------------------------------------------------------
     def connectLts(self):
         """连接LTS接口"""
-        self.mainEngine.connect('LTS')    
-        
+        self.mainEngine.connect('LTS')
+
     #----------------------------------------------------------------------
     def connectKsotp(self):
         """连接金仕达期权接口"""
-        self.mainEngine.connect('KSOTP')        
-        
+        self.mainEngine.connect('KSOTP')
+
     #----------------------------------------------------------------------
     def connectFemas(self):
         """连接飞马接口"""
-        self.mainEngine.connect('FEMAS')        
-        
-    #----------------------------------------------------------------------
-    def connectKsgold(self):
-        """连接金仕达黄金接口"""
-        self.mainEngine.connect('KSGOLD')            
-    
-    #----------------------------------------------------------------------
-    def connectWind(self):
-        """连接Wind接口"""
-        self.mainEngine.connect('Wind')
-    
-    #----------------------------------------------------------------------
-    def connectIb(self):
-        """连接Ib"""
-        self.mainEngine.connect('IB')
-        
+        self.mainEngine.connect('FEMAS')
+
+    # #----------------------------------------------------------------------
+    # def connectKsgold(self):
+    #     """连接金仕达黄金接口"""
+    #     self.mainEngine.connect('KSGOLD')
+
+    # #----------------------------------------------------------------------
+    # def connectWind(self):
+    #     """连接Wind接口"""
+    #     self.mainEngine.connect('Wind')
+    #
+    # #----------------------------------------------------------------------
+    # def connectIb(self):
+    #     """连接Ib"""
+    #     self.mainEngine.connect('IB')
+     #----------------------------------------------------------------------
+    def connectOanda(self):
+        """连接OANDA"""
+        self.mainEngine.connect('OANDA')
+
     #----------------------------------------------------------------------
     def connectOanda(self):
         """连接OANDA"""
@@ -215,7 +220,7 @@ class MainWindow(QtGui.QMainWindow):
     #----------------------------------------------------------------------
     def test(self):
         """测试按钮用的函数"""
-        api = self.mainEngine.gatewayDict['KSGOLD'].tdApi
+        api = self.mainEngine.gatewayDict['CTP'].tdApi
         api.reqID += 1
         api.reqQryOrder({}, api.reqID)
         #api.reqQryTrade({}, api.reqID)

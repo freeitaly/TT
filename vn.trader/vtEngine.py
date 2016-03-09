@@ -67,33 +67,32 @@ class MainEngine(object):
             self.addGateway(FemasGateway, 'FEMAS')
             self.gatewayDict['FEMAS'].setQryEnabled(True)
         except Exception, e:
-            print e  
-            
-        try:
-            from ksgoldGateway.ksgoldGateway import KsgoldGateway
-            self.addGateway(KsgoldGateway, 'KSGOLD')
-            self.gatewayDict['KSGOLD'].setQryEnabled(True)
-        except Exception, e:
             print e
-            
-        try:
-            from windGateway.windGateway import WindGateway
-            self.addGateway(WindGateway, 'Wind') 
-        except Exception, e:
-            print e
-        
-        try:
-            from ibGateway.ibGateway import IbGateway
-            self.addGateway(IbGateway, 'IB')
-        except Exception, e:
-            print e
-            
+
         try:
             from oandaGateway.oandaGateway import OandaGateway
             self.addGateway(OandaGateway, 'OANDA')
             self.gatewayDict['OANDA'].setQryEnabled(True)
         except Exception, e:
             print e
+        # try:
+        #     from ksgoldGateway.ksgoldGateway import KsgoldGateway
+        #     self.addGateway(KsgoldGateway, 'KSGOLD')
+        #     self.gatewayDict['KSGOLD'].setQryEnabled(True)
+        # except Exception, e:
+        #     print e
+        #
+        # try:
+        #     from windGateway.windGateway import WindGateway
+        #     self.addGateway(WindGateway, 'Wind')
+        # except Exception, e:
+        #     print e
+        #
+        # try:
+        #     from ibGateway.ibGateway import IbGateway
+        #     self.addGateway(IbGateway, 'IB')
+        # except Exception, e:
+        #     print e
 
     #----------------------------------------------------------------------
     def addGateway(self, gateway, gatewayName=None):

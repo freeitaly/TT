@@ -10,6 +10,7 @@ vtSymbol直接使用symbol
 
 import os
 import json
+import time
 
 from vnctpmd import MdApi
 from vnctptd import TdApi
@@ -112,7 +113,7 @@ class CtpGateway(VtGateway):
         
         # 初始化并启动查询
         self.initQuery()
-    
+
     #----------------------------------------------------------------------
     def subscribe(self, subscribeReq):
         """订阅行情"""
@@ -882,7 +883,9 @@ class CtpTdApi(TdApi):
         order.vtSymbol = order.symbol #'.'.join([order.symbol, order.exchange])
         
         order.orderID = data['OrderRef']
-        
+        order.orderSysID = data['OrderSysID']       # 添加exchange报单编号字段
+        order.orderDate = time.strftime('%Y-%m-%d',time.localtime())       # 添加日期字段
+
         # 方向
         if data['Direction'] == '0':
             order.direction = DIRECTION_LONG
@@ -957,7 +960,8 @@ class CtpTdApi(TdApi):
         trade.price = data['Price']
         trade.volume = data['Volume']
         trade.tradeTime = data['TradeTime']
-        
+        trade.tradeDate = time.strftime('%Y-%m-%d',time.localtime())
+
         # 推送
         self.gateway.onTrade(trade)
     
