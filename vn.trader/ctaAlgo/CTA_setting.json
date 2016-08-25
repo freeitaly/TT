@@ -1,17 +1,7 @@
 [
     {
-        "name": "double ema",
-        "className": "DoubleEmaDemo",
-        "vtSymbol": "pp1609"
-    },
-    {
-        "name": "TickBreaker",
-        "className": "TickBreaker",
-        "vtSymbol": "pp1609"
-    },
-    {
-        "name": "RockStrategy",
-        "className": "RockStrategy",
-        "vtSymbol": "m1609"
+        "name": "RangeBarDoubleSmaStrategy",
+        "className": "RangeBarDoubleSmaStrategy",
+        "vtSymbol": "m1701"
     }
 ]
