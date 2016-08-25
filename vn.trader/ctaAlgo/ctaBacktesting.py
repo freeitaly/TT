@@ -9,6 +9,9 @@ from __future__ import division
 from datetime import datetime, timedelta
 from collections import OrderedDict
 from itertools import product
+import pandas as pd
+import time
+import math
 import pymongo
 from pymongo.errors import ConnectionFailure
 import os
@@ -27,6 +30,7 @@ class BacktestingEngine(object):
     从而实现同一套代码从回测到实盘。
     """
     
+    mc_TICK_MODE = 'mc_tick'
     TICK_MODE = 'tick'
     BAR_MODE = 'bar'
 
@@ -48,10 +52,12 @@ class BacktestingEngine(object):
         # 回测相关
         self.strategy = None        # 回测策略
         self.mode = self.BAR_MODE   # 回测模式，默认为K线
-        
+
+        self.initCapital = 0        # 回测时初始资金
         self.slippage = 0           # 回测时假设的滑点
         self.rate = 0               # 回测时假设的佣金比例（适用于百分比佣金）
-        self.size = 1               # 合约大小，默认为1        
+        self.fixedCommission = 0    # 回测时假设的佣金比例（适用于固定佣金）
+        self.size = 1               # 合约大小，默认为1
         
         self.dbClient = None        # 数据库客户端
         self.dbCursor = None        # 数据库指针
@@ -116,6 +122,11 @@ class BacktestingEngine(object):
         if endDate:
             self.dataEndDate= datetime.strptime(endDate, '%Y%m%d')
         
+    #----------------------------------------------------------------------
+    def setInitCapital(self, initCapital):
+        """设置初始资金"""
+        self.initCapital = initCapital
+
     #----------------------------------------------------------------------
     def setBacktestingMode(self, mode):
         """设置回测模式"""
@@ -324,12 +335,16 @@ class BacktestingEngine(object):
             sellCrossPrice = self.bar.high      # 若卖出方向限价单价格低于该价格，则会成交
             buyBestCrossPrice = self.bar.open   # 在当前时间点前发出的买入委托可能的最优成交价
             sellBestCrossPrice = self.bar.open  # 在当前时间点前发出的卖出委托可能的最优成交价
-        else:
+        elif self.mode == self.TICK_MODE:
             buyCrossPrice = self.tick.askPrice1
             sellCrossPrice = self.tick.bidPrice1
             buyBestCrossPrice = self.tick.askPrice1
             sellBestCrossPrice = self.tick.bidPrice1
-
+        elif self.mode == self.mc_TICK_MODE:
+            buyCrossPrice = self.tick.lastPrice
+            sellCrossPrice = self.tick.lastPrice
+            buyBestCrossPrice = self.tick.lastPrice
+            sellBestCrossPrice = self.tick.lastPrice
         # 遍历限价单字典中的所有限价单
         for orderID, order in self.workingLimitOrderDict.items():
             # 判断是否会成交
@@ -523,7 +538,7 @@ class BacktestingEngine(object):
                         closedVolume = min(exitTrade.volume, entryTrade.volume)
                         result = TradingResult(entryTrade.price, entryTrade.dt, 
                                                exitTrade.price, exitTrade.dt,
-                                               -closedVolume, self.rate, self.slippage, self.size)
+                                               -closedVolume, self.rate, self.fixedCommission, self.slippage, self.size)
                         resultList.append(result)
                         
                         # 计算未清算部分
@@ -564,7 +579,7 @@ class BacktestingEngine(object):
                         closedVolume = min(exitTrade.volume, entryTrade.volume)
                         result = TradingResult(entryTrade.price, entryTrade.dt, 
                                                exitTrade.price, exitTrade.dt,
-                                               closedVolume, self.rate, self.slippage, self.size)
+                                               closedVolume, self.rate, self.fixedCommission, self.slippage, self.size)
                         resultList.append(result)
                         
                         # 计算未清算部分
@@ -599,7 +614,8 @@ class BacktestingEngine(object):
         capital = 0             # 资金
         maxCapital = 0          # 资金最高净值
         drawdown = 0            # 回撤
-        
+        drawdownRatio = 0       # 回撤率
+
         totalResult = 0         # 总成交数量
         totalTurnover = 0       # 总成交金额（合约面值）
         totalCommission = 0     # 总手续费
@@ -609,22 +625,27 @@ class BacktestingEngine(object):
         pnlList = []            # 每笔盈亏序列
         capitalList = []        # 盈亏汇总的时间序列
         drawdownList = []       # 回撤的时间序列
-        
+        drawdownRatioList = []  # 回撤率的时间序列
+
         winningResult = 0       # 盈利次数
         losingResult = 0        # 亏损次数		
         totalWinning = 0        # 总盈利金额		
         totalLosing = 0         # 总亏损金额        
-        
+
+        resultPdList = []
         for result in resultList:
+            resultPdList.append(result.__dict__)        # 下一步生成pd使用
+            # print ',',result.entryDt,',',result.exitDt,',',result.pnl,',',result.entryPrice,',',result.exitPrice,',',result.volume,',',result.commission,',',result.slippage
             capital += result.pnl
             maxCapital = max(capital, maxCapital)
             drawdown = capital - maxCapital
-            
+            drawdownRatio = drawdown / (self.initCapital + maxCapital)
             pnlList.append(result.pnl)
             timeList.append(result.exitDt)      # 交易的时间戳使用平仓时间
             capitalList.append(capital)
             drawdownList.append(drawdown)
-            
+            drawdownRatioList.append(drawdownRatio)
+
             totalResult += 1
             totalTurnover += result.turnover
             totalCommission += result.commission
@@ -643,6 +664,18 @@ class BacktestingEngine(object):
         averageLosing = totalLosing/losingResult        # 平均每笔亏损
         profitLossRatio = -averageWinning/averageLosing # 盈亏比
 
+        # 生成盈亏df，计算相关绩效
+        data = pd.DataFrame(resultPdList)
+        data['capital'] = self.initCapital + data['pnl'].cumsum()
+        return_rate = (data.iloc[-1]['capital'] - self.initCapital) / self.initCapital      # 收益率
+        trading_day = (data.iloc[-1]['exitDt'] - data.iloc[0]['entryDt']).days      # 交易日
+        annually_return_rate = return_rate / trading_day * 365      # 年化收益率
+        data['daily_return_rate'] = data['capital'].pct_change()        # 日收益率
+        std = data['daily_return_rate'].std()      # 日收益率标准差
+        annually_std = std * math.sqrt(250)     # 年化标准差
+        sharp = (annually_return_rate - 0.02) / annually_std        # 夏普比率
+
+        data.to_csv('D:/Data/Strategy/Range/%s.csv' % time.strftime('%Y-%m-%d %H.%M.%S',time.localtime()))
         # 返回回测结果
         d = {}
         d['capital'] = capital
@@ -656,11 +689,17 @@ class BacktestingEngine(object):
         d['pnlList'] = pnlList
         d['capitalList'] = capitalList
         d['drawdownList'] = drawdownList
+        d['drawdownRatio'] = '%.2f' % (min(drawdownRatioList) * 100) + ' %'
         d['winningRate'] = winningRate
         d['averageWinning'] = averageWinning
         d['averageLosing'] = averageLosing
         d['profitLossRatio'] = profitLossRatio
-        
+        d['return_rate'] = '%.2f' % (return_rate * 100) + ' %'
+        d['annually_return_rate'] = '%.2f' % (annually_return_rate * 100) + ' %'
+        d['std'] = std
+        d['annually_std'] = annually_std
+        d['sharp'] = sharp
+
         return d
         
     #----------------------------------------------------------------------
@@ -675,8 +714,10 @@ class BacktestingEngine(object):
         
         self.output(u'总交易次数：\t%s' % formatNumber(d['totalResult']))        
         self.output(u'总盈亏：\t%s' % formatNumber(d['capital']))
-        self.output(u'最大回撤: \t%s' % formatNumber(min(d['drawdownList'])))                
-        
+        self.output(u'总佣金：\t%s' % formatNumber(d['totalCommission']))
+        self.output(u'最大回撤: \t%s' % formatNumber(min(d['drawdownList'])))
+        self.output(u'最大回撤率: \t%s' % (d['drawdownRatio']))
+
         self.output(u'平均每笔盈利：\t%s' %formatNumber(d['capital']/d['totalResult']))
         self.output(u'平均每笔滑点：\t%s' %formatNumber(d['totalSlippage']/d['totalResult']))
         self.output(u'平均每笔佣金：\t%s' %formatNumber(d['totalCommission']/d['totalResult']))
@@ -685,7 +726,12 @@ class BacktestingEngine(object):
         self.output(u'平均每笔盈利\t%s' %formatNumber(d['averageWinning']))
         self.output(u'平均每笔亏损\t%s' %formatNumber(d['averageLosing']))
         self.output(u'盈亏比：\t%s' %formatNumber(d['profitLossRatio']))
-    
+        self.output(u'收益率：\t%s' %(d['return_rate']))
+        self.output(u'年化收益率：\t%s' %(d['annually_return_rate']))
+        self.output(u'日收益率标准差：\t%s' %formatNumber(d['std']))
+        self.output(u'年化标准差：\t%s' %formatNumber(d['annually_std']))
+        self.output(u'夏普比率：\t%s' %formatNumber(d['sharp']))
+
         # 绘图
         import matplotlib.pyplot as plt
         
@@ -719,9 +765,11 @@ class BacktestingEngine(object):
         self.size = size
         
     #----------------------------------------------------------------------
-    def setRate(self, rate):
+    def setRate(self, rate, fixedCommission=0):
         """设置佣金比例"""
         self.rate = rate
+        self.fixedCommission = fixedCommission
+
 
     #----------------------------------------------------------------------
     def runOptimization(self, strategyClass, optimizationSetting):
@@ -780,7 +828,7 @@ class TradingResult(object):
 
     #----------------------------------------------------------------------
     def __init__(self, entryPrice, entryDt, exitPrice, 
-                 exitDt, volume, rate, slippage, size):
+                 exitDt, volume, rate, fixedCommission, slippage, size):
         """Constructor"""
         self.entryPrice = entryPrice    # 开仓价格
         self.exitPrice = exitPrice      # 平仓价格
@@ -791,7 +839,7 @@ class TradingResult(object):
         self.volume = volume    # 交易数量（+/-代表方向）
         
         self.turnover = (self.entryPrice+self.exitPrice)*size*abs(volume)   # 成交金额
-        self.commission = self.turnover*rate                                # 手续费成本
+        self.commission = self.turnover*rate + fixedCommission         # 手续费成本
         self.slippage = slippage*2*size*abs(volume)                         # 滑点成本
         self.pnl = ((self.exitPrice - self.entryPrice) * volume * size 
                     - self.commission - self.slippage)                      # 净盈亏
