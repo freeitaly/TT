@@ -432,7 +432,7 @@ def loadMcTickCsv(fileName, dbName, symbol):
         tick = CtaTickData()
         tick.vtSymbol = symbol
         tick.symbol = symbol
-        tick.lastPrice = d['Price']
+        tick.lastPrice = float(d['Price'])
         tick.date = datetime.strptime(d['Date'], '%Y/%m/%d').strftime('%Y%m%d')
         tick.time = d['Time']
         tick.datetime = datetime.strptime(tick.date + ' ' + tick.time, '%Y%m%d %H:%M:%S')
@@ -498,7 +498,9 @@ if __name__ == '__main__':
     # loadMcCsv('IF0000_1min.csv', MINUTE_DB_NAME, 'IF0000')
     # loadMcTickCsv('pp_hot.csv', TICK_DB_NAME, 'pp_hot')
     # loadMcCsv('pp 1min.txt', MINUTE_DB_NAME, 'pp_hot')
-    loadMcCsv(r"t:\Yang.Huabiao\CTA\Trading-System\vn.trader\ctaAlgo\data\600519.txt", 'MC_1Min_Db', '600519')
+    # loadMcCsv(r"t:\Yang.Huabiao\CTA\Trading-System\vn.trader\ctaAlgo\data\600519.txt", 'MC_1Min_Db', '600519')
+    loadMcTickCsv(r"t:\Yang.Huabiao\CTA\Trading-System\vn.trader\ctaAlgo\data\m tick@.txt", TICK_DB_NAME, 'm_mc')
+
     # loadMcCsv('IF0000_1min.csv', MINUTE_DB_NAME, 'IF0000')
     # e = HistoryDataEngine()
     # day = e.realLastTradeDate()
