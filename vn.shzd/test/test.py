@@ -66,8 +66,17 @@ if __name__ == '__main__':
     data['msgtype'] = 'MA'
     data['11'] = '00010337'
     data['201'] = '+'
-    data['307'] = "CME,6J1609"
+    #data['307'] = "CME,6J1609"
+    data['307'] = 'ICE,WBS1611'
+    print data
     api.shzdSendInfoToMarket(data)
+    
+    # # 查询合约
+    # sleep(1)
+    # data = {}
+    # data['msgtype'] = 'HY'
+    # data['11'] = '00010337'
+    # api.shzdSendInfoToMarket(data)    
     
     raw_input()
     
